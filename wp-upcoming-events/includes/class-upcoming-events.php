@@ -68,9 +68,9 @@ class UPCOMING_EVENTS {
         ));
 
 
-        // CRON 1: FETCH ALL PLAYERS EVERYB HOUR
-        $task_hook = 'fetch_all_players';
-        $this->loader->add_action( $task_hook, $plugin_cron, 'UPCOMING_EVENTS_cron_get_all_players', 15,1);
+        // CRON 1: FETCH EVENTS DATA EVERY HOUR AND PUT IT INTO THE TABLE
+        $task_hook = 'fetch_events_data';
+        $this->loader->add_action( $task_hook, $plugin_cron, 'upcoming_events_update_data_cron', 15,1);
         if ( ! wp_next_scheduled( $task_hook ) ) {
 
             wp_schedule_event( time(), 'hourly', $task_hook );
