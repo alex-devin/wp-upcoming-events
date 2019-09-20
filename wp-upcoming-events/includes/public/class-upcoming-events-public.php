@@ -43,7 +43,8 @@ class upcoming_events_PUBLIC
             $tz_object = new DateTimeZone('America/New_York');
             $datetime = new DateTime();
             $datetime->setTimezone($tz_object);
-            return $datetime->format('Y/m/d');
+            $datetime->format("M d, Y");
+            return $datetime;
         }
 
         //retrieves the data from the API and stores it into an array, which is returned
@@ -76,28 +77,25 @@ class upcoming_events_PUBLIC
                 //Pull the data we want. 
                 $eName = $events['event']['name'];
                 $eDate = $events['event']['end_date'];
-                $eDate = str_replace('-', '/', $eDate);
-                //grab the event's end date and save it as a datetime object for comparison
-                $eDateTime = strtotime($eDate);
+                $endDate = date("M-d-Y", strtotime($eDate));
                 $sDate = $events['event']['start_date'];
-                $sDate = str_replace('-', '/', $sDate);
+                $startDate = date("M-d-Y", strtotime($sDate));
                 $eLink = "placeholder.com";
 
                 //Save it into an array called $singleEvent
                 $singleEvent = array(
                     'name' => $eName,
-                    'start_date' => $sDate,
-                    'end_date' => $eDate,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
                     'event_link' => $eLink
                 );
-
 
                 //checks to see if the $singleEvent is relevant or not (older than today's date)
                 $date_now = strtotime(getDatetimeNow());
 
                 //if today's date is less than the stored date, add it
                 //(i.e. the event hasn't happened yet, it is an upcoming event)
-                if ($eDateTime > $date_now && $eDateTime != null) {
+                if ($eDate > $date_now && $eDate != null) {
                     array_push($filteredEvents, $singleEvent);
                 } else {
                     //do nothing
@@ -174,24 +172,28 @@ class upcoming_events_PUBLIC
         //echo ($query);
         ob_start();
 
-        if (!empty($query)) {            
+        if (!empty($query)) {
             echo '<div class="upcomingEventsWrapper">';   // Both featured event and list to be printed in this wrapper 
             $firstEventName = $query[0]['name'];
             $firstEventStartDate = $query[0]['start_date'];
-            $firstEventEndDate = $query[0]['end_date'];
-            $firstEventURL = $query[0]['event_link'];
-
-            $fullDate = $firstEventStartDate . " - " . $firstEventEndDate;
+            $fDate = strtotime($firstEventStartDate);
+            $fDate = date('M d, Y', $fDate);
+            $firstEventEndDate = date($query[0]['end_date']);
+            $eDate = strtotime($firstEventEndDate);
+            $eDate = date('M d, Y', $eDate);
+            $fullDate = $fDate . " - " . $eDate;
+            $firstEventURL = $query[0]['event_link'];;
             $location = "Orlando, FL";
             $eventImg = "";
             echo
                 // Loop 1 - event with closest start date or tagged as featured
                 '<div class="featuredEventWrapper one-third first">',
-                '<div class="featured-event-image">' . get_field('field_name') . '</div>',
-                '<div class="featured-event-name">' . $firstEventName . '</div>',
-                '<div class="featured-event-location">' . $location . '</div>',
+                '<div class="featured-event-image"><img src="/wp-content/uploads/2015/06/arizona.jpeg" alt=""></div>',
+                '<div class="featured-event-name">
+                <h3>' . $firstEventName . '</h3></div>',
+                '<div class="featured-event-location">' .  $location . '</h4></div>',
                 '<div class="featured-event-date">' . $fullDate . '</div>',
-                '<div class="featured-event-information-url">' . $firstEventURL . '</div>',
+                '<div class="featured-event-information-url"><a class="button" href="">Event Information <span class="dashicons dashicons-external"></span></a></div>',
                 '</div>',
                 '<div class="listEventsWrapper two-thirds">',
                 '<div class="divTable upcomingEventsList">',
@@ -207,7 +209,11 @@ class upcoming_events_PUBLIC
             for ($count = 1; $count < 10; $count++) {
                 $nextEventName = $query[$count]['name'];
                 $nextEventStartDate = $query[$count]['start_date'];
+                $sDate = strtotime($nextEventStartDate);
+                $sDate = date('M d, Y', $sDate);
                 $nextEventEndDate = $query[$count]['end_date'];
+                $eDate = strtotime($nextEventEndDate);
+                $eDate = date('M d, Y', $eDate);
                 $nextEventURL = $query[$count]['event_link'];
                 $nextEventCity = 'ORLANDO, FL';
                 echo
@@ -215,7 +221,7 @@ class upcoming_events_PUBLIC
                     '<div class="eventDetails divTableRow">',
                     '<div class="event_name divTableCell">' . $nextEventName . '</div>',
                     '<div class="event_city divTableCell">' . $nextEventCity . '</div>',
-                    '<div class="event_date divTableCell">' . $nextEventStartDate . 'to' . $nextEventEndDate . '</div>',
+                    '<div class="event_date divTableCell">' . $sDate . ' to ' . $eDate . '</div>',
                     '</div>';
                 // End eventDetails divTableRow loop row
             }
@@ -227,7 +233,7 @@ class upcoming_events_PUBLIC
             //wp_reset_postdata();
             echo '</div>'; // End upcomingEventsWrapper
             $myvariable = ob_get_contents();
-            ob_end_clean(); 
+            ob_end_clean();
             return $myvariable;
         }
     }
