@@ -43,31 +43,34 @@ class upcoming_events_PUBLIC
             $tz_object = new DateTimeZone('America/New_York');
             $datetime = new DateTime();
             $datetime->setTimezone($tz_object);
-            $datetime->format("M d, Y");
-            return $datetime;
+            return $datetime->format('Y/m/d');
         }
 
-        //retrieves the data from the API and stores it into an array, which is returned
+        //retrieves the data from the API and stores it into an array, which is returned.
+        //returns false if not able to get data from the API.
         function get_data_from_API()
         {
 
             //call the API
             $apikey = "9rCPJKFYcpWLM0XxhhBkGQ";
             $url = "https://www.golfgenius.com/api_v2/" . $apikey . "/events";
+            $response = wp_remote_get($url);
 
             //Save the contents of the GET request
-            $content = file_get_contents($url);
+            try {
+                //dump the results of the api call into an array 
+                $array = json_decode(wp_remote_retrieve_body($response), true);
+                return $array;
+            } catch (Exception $ex) {
+                return false;
+            } // end try/catch
 
-            //dump the results of the api call into an array
-            $array = json_decode($content, true);
-            return $array;
         }
 
         //filters the data from the API and sorts it ascending based on end date.
         //Adds the data to the wp_options
         function update_data_filter_and_sort()
         {
-
             $array = get_data_from_API();
             //create a new array for only the data we want
             $filteredEvents = array();
@@ -77,16 +80,18 @@ class upcoming_events_PUBLIC
                 //Pull the data we want. 
                 $eName = $events['event']['name'];
                 $eDate = $events['event']['end_date'];
-                $endDate = date("M-d-Y", strtotime($eDate));
+                $eDate = str_replace('-', '/', $eDate);
+                //grab the event's end date and save it as a datetime object for comparison
+                $eDateTime = strtotime($eDate);
                 $sDate = $events['event']['start_date'];
-                $startDate = date("M-d-Y", strtotime($sDate));
+                $sDate = str_replace('-', '/', $sDate);
                 $eLink = "placeholder.com";
 
                 //Save it into an array called $singleEvent
                 $singleEvent = array(
                     'name' => $eName,
-                    'start_date' => $startDate,
-                    'end_date' => $endDate,
+                    'start_date' => $sDate,
+                    'end_date' => $eDate,
                     'event_link' => $eLink
                 );
 
@@ -95,7 +100,7 @@ class upcoming_events_PUBLIC
 
                 //if today's date is less than the stored date, add it
                 //(i.e. the event hasn't happened yet, it is an upcoming event)
-                if ($eDate > $date_now && $eDate != null) {
+                if ($eDateTime > $date_now && $eDateTime != null) {
                     array_push($filteredEvents, $singleEvent);
                 } else {
                     //do nothing
@@ -112,6 +117,7 @@ class upcoming_events_PUBLIC
         }
 
         //adds $filteredEvents item to wp_options
+        //returns false if it was not able to
         function add_filteredEvents_to_wp_options()
         {
             //clears out the data from the options table in order to add fresh data
@@ -125,7 +131,8 @@ class upcoming_events_PUBLIC
             $autoload = "yes";
 
             //just for the first instance - if the row in the options table doesn't exist, create it.
-            if (!get_option($option, $default = false)) {
+            //also checks that the fiteredEvents array is not null.
+            if (!get_option($option, $default = false) && $filteredEvents != null) {
                 add_option($option, $value, $deprecated, $autoload);
                 $optionValue = get_option('upcoming_events');
                 //if once we've added the option and it still does not exist
@@ -167,21 +174,23 @@ class upcoming_events_PUBLIC
             return $list;
         }
 
+        delete_option('upcoming_events');
+        add_filteredEvents_to_wp_options();
         $query = get_first_10_event_rows();
-        //echo "test test";
-        //echo ($query);
-        ob_start();
 
-        if (!empty($query)) {
+        ob_start();
+        if (!empty($query)) 
+        {
+            ob_start();
             echo '<div class="upcomingEventsWrapper">';   // Both featured event and list to be printed in this wrapper 
             $firstEventName = $query[0]['name'];
             $firstEventStartDate = $query[0]['start_date'];
-            $fDate = strtotime($firstEventStartDate);
-            $fDate = date('M d, Y', $fDate);
+            //$fDate = strtotime($firstEventStartDate);
+            //$fDate = date('M d, Y', $fDate);
             $firstEventEndDate = date($query[0]['end_date']);
-            $eDate = strtotime($firstEventEndDate);
-            $eDate = date('M d, Y', $eDate);
-            $fullDate = $fDate . " - " . $eDate;
+            //$eDate = strtotime($firstEventEndDate);
+            //$eDate = date('M d, Y', $eDate);
+            $fullDate = $firstEventStartDate . " - " . $firstEventEndDate;
             $firstEventURL = $query[0]['event_link'];;
             $location = "Orlando, FL";
             $eventImg = "";
@@ -197,7 +206,6 @@ class upcoming_events_PUBLIC
                 '</div>',
                 '<div class="listEventsWrapper two-thirds">',
                 '<div class="divTable upcomingEventsList">',
-
                 // divTable heading 	
                 '<div class="divTableBody">',
                 '<div class="divTableRow">',
@@ -205,15 +213,14 @@ class upcoming_events_PUBLIC
                 '<div class="divTableCell">City</div>',
                 '<div class="divTableCell">Event Dates</div>',
                 '</div>';
-
             for ($count = 1; $count < 10; $count++) {
                 $nextEventName = $query[$count]['name'];
                 $nextEventStartDate = $query[$count]['start_date'];
-                $sDate = strtotime($nextEventStartDate);
-                $sDate = date('M d, Y', $sDate);
+                //$sDate = strtotime($nextEventStartDate);
+                //$sDate = date('M d, Y', $sDate);
                 $nextEventEndDate = $query[$count]['end_date'];
-                $eDate = strtotime($nextEventEndDate);
-                $eDate = date('M d, Y', $eDate);
+                //$eDate = strtotime($nextEventEndDate);
+                //$eDate = date('M d, Y', $eDate);
                 $nextEventURL = $query[$count]['event_link'];
                 $nextEventCity = 'ORLANDO, FL';
                 echo
@@ -221,7 +228,7 @@ class upcoming_events_PUBLIC
                     '<div class="eventDetails divTableRow">',
                     '<div class="event_name divTableCell">' . $nextEventName . '</div>',
                     '<div class="event_city divTableCell">' . $nextEventCity . '</div>',
-                    '<div class="event_date divTableCell">' . $sDate . ' to ' . $eDate . '</div>',
+                    '<div class="event_date divTableCell">' . $nextEventStartDate . ' to ' . $nextEventEndDate . '</div>',
                     '</div>';
                 // End eventDetails divTableRow loop row
             }
@@ -229,9 +236,7 @@ class upcoming_events_PUBLIC
                 '</div>',
                 '</div>', // End divTable upcomingEventsList	
                 '</div>';    // End listEventsWrapper two-thirds
-
-            //wp_reset_postdata();
-            echo '</div>'; // End upcomingEventsWrapper
+              echo '</div>'; // End upcomingEventsWrapper
             $myvariable = ob_get_contents();
             ob_end_clean();
             return $myvariable;
