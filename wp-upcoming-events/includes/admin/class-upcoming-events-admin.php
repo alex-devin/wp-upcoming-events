@@ -16,7 +16,7 @@ class upcoming_events_ADMIN {
     // ADMIN MENU ITEM
     public function upcoming_events_admin_menu() {
 
-        add_submenu_page( 'options-general.php', 'Upcoming Events Settings', 'Upcoming Events', 'manage_options', 'upcoming-events-settingspage', array( &$this, 'upcoming_events_print_settings_page' ) );
+        add_submenu_page( 'options-general.php', 'Load API Data For Upcoming Events', 'Refresh Upcoming Events', 'manage_options', 'upcoming-events-settingspage', array( &$this, 'upcoming_events_print_settings_page' ) );
     }
 
     public function upcoming_events_print_settings_page() {
