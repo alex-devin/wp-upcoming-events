@@ -97,7 +97,7 @@ class upcoming_events_PUBLIC
               '<div class="featured-event-name"><h3>' . $firstEventName . '</h3></div>',
               '<div class="featured-event-location"><h4>' .  $location . '</h4></div>',
               '<div class="featured-event-date"><p>' . $fullDate . '</p></div>',
-              '<div class="featured-event-information-url"><a href="www.' . "https://".$firstEventURL . '" class="button" >Event Information <span class="dashicons dashicons-external"></span></a></div>',
+              '<div class="featured-event-information-url"><a href="'. 'https://'.$firstEventURL . '" class="button" >Event Information <span class="dashicons dashicons-external"></span></a></div>',
               '</div>',
               '<div class="listEventsWrapper two-thirds">',
               '<div class="divTable upcomingEventsListNormalCase">',
